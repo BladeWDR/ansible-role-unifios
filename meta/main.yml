@@ -1,0 +1,9 @@
+---
+dependencies: []
+
+galaxy_info:
+  role_name: ansible-role-unifios
+  author: bladewdr
+  description: Unifi OS installation role for Debian or Ubuntu.
+  license: MIT
+  min_ansible_version: "2.18"

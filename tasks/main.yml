@@ -1,0 +1,76 @@
+---
+
+- name: Install Unifi OS dependencies.
+  ansible.builtin.apt:
+    name:
+      - slirp4netns
+      - podman
+    state: present
+
+- name: Populate service facts
+  service_facts:
+
+- name: Get latest UOS release status
+  ansible.builtin.uri:
+    url: "https://api.glennr.nl/api/latest-application-release?app=unifi-os-server&version=latest" 
+    return_content: yes
+    validate_certs: yes
+  register: uos_api_response
+
+- name: Get the latest UnifiOS version string from Unifi Glenn's API.
+  ansible.builtin.set_fact:
+    unifi_os_desired_version: "{{ uos_api_response.json.latest_release }}"
+  when: unifi_os_version is not defined
+
+- name: Set fact for Unifi version if we want a specific release.
+  ansible.builtin.set_fact:
+    unifi_os_desired_version: "{{ unifi_os_version }}"
+  when: unifi_os_version is defined
+
+- name: Set fact for CPU architecture.
+  ansible.builtin.set_fact:
+    unifi_os_arch: "{% if ansible_facts['architecture'] == 'x86_64' %}amd64\
+        {% elif ansible_facts['architecture'] == 'arm64' %}arm64\
+        {% endif %}"
+
+- name: Detect Unifi OS server current version.
+  when: ansible_facts.services['uosserver.service'] is defined
+  ansible.builtin.command: uosserver version
+  register: unifi_os_version_output
+  changed_when: false
+
+- name: Get latest UOS release status
+  ansible.builtin.uri:
+    url: "https://api.glennr.nl/api/application-release?app=uosserver&version={{ unifi_os_desired_version }}&architecture={{ unifi_os_arch }}" 
+    return_content: yes
+    validate_certs: yes
+  register: unifi_os_download_link_json
+
+- name: Set fact for Unifi OS Download link.
+  ansible.builtin.set_fact:
+    unifi_os_download_link: "{{ unifi_os_download_link_json.json.download_link }}"
+
+- name: Unifi OS installation block.
+  when: >-
+    unifi_os_version_output.stdout is not defined or
+    unifi_os_version_output.stdout != unifi_os_desired_version
+  notify: Ensure Unifi OS service is started
+  block:
+
+    - name: Download the latest installer package.
+      ansible.builtin.get_url:
+        url:  "{{ unifi_os_download_link }}"
+        dest: "{{ unifi_os_installer_exec }}"
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Install UnifiOS Server.
+      ansible.builtin.command:
+        cmd: "{{ unifi_os_installer_exec }} --non-interactive --force-install"
+
+- name: Add admin user to uoserver group so they can run uosserver commands without sudo.
+  ansible.builtin.user:
+    name: "{{ admin_username }}"
+    append: true
+    groups: uosserver
