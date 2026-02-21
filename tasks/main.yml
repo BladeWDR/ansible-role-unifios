@@ -1,5 +1,16 @@
 ---
 
+- name: Check CPU flags for AVX support.
+  ansible.builtin.command: grep -m1 '^flags' /proc/cpuinfo
+  register: cpu_flags
+  changed_when: false
+  check_mode: false
+
+- name: Fail if AVX is not supported.
+  ansible.builtin.fail:
+    msg: "AVX support is required for MongoDB 8.0+. If this is a virtual machine, please check your CPU type."
+  when: "'avx' not in cpu_flags.stdout"
+
 - name: Install Unifi OS dependencies.
   ansible.builtin.apt:
     name:
