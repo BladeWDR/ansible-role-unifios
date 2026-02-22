@@ -2,7 +2,7 @@
 dependencies: []
 
 galaxy_info:
-  role_name: ansible-role-unifios
+  role_name: unifios
   author: bladewdr
   description: Unifi OS installation role for Debian or Ubuntu.
   license: MIT
