@@ -1,0 +1,22 @@
+---
+name: 'Publish latest release to Ansible Galaxy'
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    name: 'Publish to Ansible Galaxy'
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: 'ubuntu-latest'
+    steps:
+      - name: 'checkout'
+        uses: 'actions/checkout@v2'
+      - name: 'galaxy'
+        uses: 'robertdebock/galaxy-action@1.2.0'
+        with:
+          galaxy_api_key: '${{ secrets.ANSIBLE_GALAXY_TOKEN }}'
+          git_branch: 'main'
