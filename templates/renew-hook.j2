@@ -1,9 +1,9 @@
 #!/bin/bash
 
 set -euo pipefail
+
 SOURCE_KEY="/etc/letsencrypt/live/{{ unifi_os_domain }}/privkey.pem"
-SOURCE_CERT="/etc/letsencrypt/live/{{ unifi_os_domain }}/cert.pem"
-SOURCE_CHAIN="/etc/letsencrypt/live/{{ unifi_os_domain }}/chain.pem"
+SOURCE_CERT="/etc/letsencrypt/live/{{ unifi_os_domain }}/fullchain.pem"
 DEST_KEY="{{ unifi_os_tls_key }}"
 DEST_CERT="{{ unifi_os_tls_cert }}"
 
@@ -20,7 +20,11 @@ cp "$DEST_CERT" "$DEST_CERT.bak"
 cp "$SOURCE_KEY" "$DEST_KEY"
 
 # Combine cert and chain for certbot
-cat "$SOURCE_CERT" "$SOURCE_CHAIN" > "$DEST_CERT" 2>/dev/null
+cp "$SOURCE_CERT" "$DEST_CERT"
+
+# chown and chmod the replaced certificates
+chown uosserver:uosserver "$DEST_KEY" "$DEST_CERT"
+chmod 600 "$DEST_KEY" "$DEST_CERT"
 
 # Start up Unifi OS Server again
 
