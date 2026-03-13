@@ -10,7 +10,6 @@ on:
 jobs:
   build:
     name: 'Publish to Ansible Galaxy'
-    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: 'ubuntu-latest'
     steps:
       - name: 'checkout'
