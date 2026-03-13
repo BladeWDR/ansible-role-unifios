@@ -90,3 +90,8 @@
     name: "{{ admin_username }}"
     append: true
     groups: uosserver
+
+- name: Ensure that Unifi OS Server service is set to run at boot.
+  ansible.builtin.service:
+    name: uosserver
+    enabled: true
