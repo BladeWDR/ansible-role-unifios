@@ -5,6 +5,11 @@
     msg: "Cloudflare API key not defined! Please set the certbot_cloudflare_api_key variable."
   when: certbot_cloudflare_api_key is not defined
 
+- name: Fail if Cloudflare API email is not defined.
+  ansible.builtin.fail:
+    msg: "Cloudflare API email not defined! Please set the certbot_email variable."
+  when: certbot_email is not defined
+
 - name: Install needed packages for Certbot (Ubuntu/Debian)
   ansible.builtin.apt:
     name: "{{ certbot_needed_packages }}"
