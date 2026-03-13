@@ -113,7 +113,7 @@
   ansible.builtin.command: >
     certbot certonly --key-type rsa --rsa-key-size 4096
     -d {{ unifi_os_domain }}
-    --deploy-hook "{{ unifi_renew_hook_filename }}"
+    --deploy-hook "bash {{ unifi_renew_hook_filename }}"
     --dns-cloudflare
     --dns-cloudflare-credentials {{ certbot_secrets_dir }}/{{ certbot_secrets_file }}
     --dns-cloudflare-propagation-seconds {{ certbot_dns_propagation_seconds }}
