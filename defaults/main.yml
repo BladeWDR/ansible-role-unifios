@@ -1,0 +1,10 @@
+---
+
+certbot_needed_packages:
+  - certbot
+  - python3-certbot-dns-cloudflare
+
+certbot_dns_propagation_seconds: 60
+
+certbot_secrets_dir: /root/.secrets/certbot
+certbot_secrets_file: keys.ini

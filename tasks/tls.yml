@@ -1,0 +1,132 @@
+---
+
+- name: Fail if Cloudflare API key is not defined.
+  ansible.builtin.fail:
+    msg: "Cloudflare API key not defined! Please set the certbot_cloudflare_api_key variable."
+  when: certbot_cloudflare_api_key is not defined
+
+- name: Install needed packages for Certbot (Ubuntu/Debian)
+  ansible.builtin.apt:
+    name: "{{ certbot_needed_packages }}"
+    state: present
+  when: ansible_os_family == 'Debian'
+
+- name: Install needed packages for Certbot (RHEL/Fedora)
+  ansible.builtin.dnf:
+    name: "{{ certbot_needed_packages }}"
+    state: present
+  when: ansible_os_family == 'RedHat'
+
+- name: Test if the secrets directory already exists.
+  ansible.builtin.stat:
+    path: "{{ certbot_secrets_dir }}"
+  register: secrets_dir
+
+- name: Test if the secrets file already exists.
+  ansible.builtin.stat:
+    path: "{{ certbot_secrets_dir }}/{{ certbot_secrets_file}}"
+  register: secrets_file
+
+- name: Create secrets directory structure.
+  when:
+    - not secrets_dir.stat.exists or not secrets_file.stat.exists
+    - not ansible_check_mode
+  block:
+
+    - name: Create the secrets directory.
+      ansible.builtin.file:
+        path: "{{ certbot_secrets_dir }}"
+        owner: root
+        group: root
+        mode: '0700'
+        state: directory
+
+    - name: Create the secrets ini file.
+      ansible.builtin.file:
+        path: "{{ certbot_secrets_dir }}/{{ certbot_secrets_file }}"
+        state: touch
+        owner: root
+        group: root
+        mode: '0700'
+
+- name: Check if the INI file already has the correct key.
+  ansible.builtin.command: "grep -Fxq dns_cloudflare_api_token={{ certbot_cloudflare_api_key }} {{ certbot_secrets_dir }}/{{ certbot_secrets_file }}"
+  register: correct_key
+  changed_when: false
+  failed_when: false
+  no_log: true
+
+- name: Key update block.
+  when: correct_key.rc != 0
+  block:
+    - name: Make the directory writable.
+      ansible.builtin.file:
+        path: "{{ certbot_secrets_dir }}"
+        owner: root
+        group: root
+        mode: '0700'
+        recurse: true
+      when: secrets_dir.stat.exists
+
+    - name: Insert the API key needed for a Cloudflare DNS challenge.
+      ansible.builtin.lineinfile:
+        path: "{{ certbot_secrets_dir }}/{{ certbot_secrets_file }}"
+        regexp: '^dns_cloudflare_api_token='
+        line: "dns_cloudflare_api_token={{ certbot_cloudflare_api_key }}"
+      no_log: true
+
+- name: Revoke write permissions on the INI file.
+  ansible.builtin.file:
+    path: "{{ certbot_secrets_dir }}/{{ certbot_secrets_file}}"
+    owner: root
+    group: root
+    mode: '0400'
+  when: not ansible_check_mode
+
+- name: Make the secrets directory only available to root.
+  ansible.builtin.file:
+    path: "{{ certbot_secrets_dir }}"
+    owner: root
+    group: root
+    mode: '0700'
+  when: not ansible_check_mode
+
+- name: Create the Unifi OS server certificate renew hook script.
+  ansible.builtin.template:
+    src: renew-hook.j2
+    dest: "{{ unifi_renew_hook_filename }}"
+    owner: root
+    group: root
+    mode: '0744'
+
+- name: Check if certificate already exists.
+  ansible.builtin.stat:
+    path: "/etc/letsencrypt/live/{{ unifi_os_domain }}/cert.pem"
+  register: cert_exists
+
+- name: Generate certificates using certbot and a DNS challenge
+  ansible.builtin.command: >
+    certbot certonly
+    -d {{ unifi_os_domain }}
+    --deploy-hook "{{ unifi_renew_hook_filename }}"
+    --dns-cloudflare
+    --dns-cloudflare-credentials {{ certbot_secrets_dir }}/{{ certbot_secrets_file }}
+    --dns-cloudflare-propagation-seconds {{ certbot_dns_propagation_seconds }}
+    --agree-tos
+    --email {{ certbot_email }}
+    --non-interactive
+  when: 
+    - unifi_os_domain is defined
+    - not cert_exists.stat.exists
+
+- name: Verify certbot.timer is active and enabled
+  ansible.builtin.command: systemctl is-enabled --quiet certbot.timer
+  register: certbot_enabled
+  failed_when: certbot_enabled.rc != 0
+  changed_when: false
+
+- name: Ensure certbot.timer is running
+  ansible.builtin.systemd:
+    name: certbot.timer
+    enabled: true
+    state: started

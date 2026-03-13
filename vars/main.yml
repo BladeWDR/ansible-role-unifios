@@ -1,1 +1,4 @@
 unifi_os_installer_exec: /tmp/unifi-os-installer
+unifi_os_tls_key: /home/uosserver/.local/share/containers/storage/volumes/uosserver_data/_data/unifi-core/config/unifi-core.key
+unifi_os_tls_cert: /home/uosserver/.local/share/containers/storage/volumes/uosserver_data/_data/unifi-core/config/unifi-core.crt
+unifi_renew_hook_filename: /opt/unifi-os-cert-renew-hook.j2

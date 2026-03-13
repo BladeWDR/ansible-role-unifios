@@ -95,3 +95,7 @@
   ansible.builtin.service:
     name: uosserver
     enabled: true
+
+- name: Include TLS certificate tasks.
+  ansible.builtin.include_tasks: tls.yml
+  when: unifi_os_domain is defined

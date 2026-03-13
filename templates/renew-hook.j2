@@ -1,0 +1,26 @@
+#!/bin/sh
+
+SOURCE_KEY="/etc/letsencrypt/live/{{ unifi_os_domain }}/privkey.pem"
+SOURCE_CERT="/etc/letsencrypt/live/{{ unifi_os_domain }}/cert.pem"
+SOURCE_CHAIN="/etc/letsencrypt/live/{{ unifi_os_domain }}/chain.pem"
+DEST_KEY="{{ unifi_os_tls_key }}"
+DEST_CERT="{{ unifi_os_tls_cert }}"
+
+# Stop Unifi OS server cleanly.
+
+/usr/local/bin/uosserver stop
+
+# Back up existing keys
+
+cp "$DEST_KEY" "$DEST_KEY.bak"
+cp "$DEST_CERT" "$DEST_CERT.bak"
+
+# Copy the private key
+cp "$SOURCE_KEY" "$DEST_KEY"
+
+# Combine cert and chain for certbot
+cat "$SOURCE_CERT" "$SOURCE_CHAIN" > "$DEST_CERT" 2>/dev/null
+
+# Start up Unifi OS Server again
+
+/usr/local/bin/uosserver start
