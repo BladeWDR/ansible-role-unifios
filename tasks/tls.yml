@@ -109,7 +109,7 @@
     path: "/etc/letsencrypt/live/{{ unifi_os_domain }}/cert.pem"
   register: cert_exists
 
-- name: Generate certificates using certbot and a DNS challenge
+- name: Generate certificates using certbot and a DNS challenge.
   ansible.builtin.command: >
     certbot certonly --key-type rsa --rsa-key-size 4096
     -d {{ unifi_os_domain }}
