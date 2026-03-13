@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -euo pipefail
 SOURCE_KEY="/etc/letsencrypt/live/{{ unifi_os_domain }}/privkey.pem"
 SOURCE_CERT="/etc/letsencrypt/live/{{ unifi_os_domain }}/cert.pem"
 SOURCE_CHAIN="/etc/letsencrypt/live/{{ unifi_os_domain }}/chain.pem"
